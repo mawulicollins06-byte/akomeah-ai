@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+!.env.example
+android/.gradle/
+android/build/
+android/app/build/
+.DS_Store
+*.backup
+*.save
+*.history-backup
+*.before-*
+*.format-backup
+*.composer-backup
+*.firebase-backup
+*.memory-backup
+*.smart-memory-backup

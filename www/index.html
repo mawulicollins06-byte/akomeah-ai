@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1020">
+<title>AKOMEAH AI</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <div class="brand">AKOMEAH AI</div>
+    <div class="header-subtitle">One Platform. Endless Possibilities.</div>
+  </div>
+  <div class="avatar">A</div>
+</header>
+
+<main class="app-layout">
+
+<!-- HOME -->
+<section id="home" class="screen active">
+  <div class="welcome">
+    <div class="logo">A</div>
+    <h1>Welcome to AKOMEAH AI</h1>
+    <p class="muted">Your intelligent assistant for learning, creativity, knowledge and productivity.</p>
+    <button class="primary-btn" onclick="App.newChat()">Start a conversation</button>
+  </div>
+
+  <div class="card">
+    <h3>What can I help you with?</h3>
+    <p class="muted">Ask questions, explore ideas, learn new skills and get assistance with everyday tasks.</p>
+  </div>
+
+  <div class="card">
+    <h3>Explore AKOMEAH AI</h3>
+    <p>AI conversations</p>
+    <p>Learning assistance</p>
+    <p>Writing and creativity</p>
+    <p>Translation and coding</p>
+  </div>
+</section>
+
+<!-- CHAT -->
+<section id="chat" class="screen">
+  <h2>AI Assistant</h2>
+  <button class="secondary-btn" onclick="App.newChat()">+ New chat</button>
+
+  <div id="chatMessages" class="chat-area">
+    <div class="message ai">
+      Hello! Welcome to AKOMEAH AI. How can I help you today?
+    </div>
+  </div>
+
+  <div class="chat-controls">
+    <input id="messageInput" placeholder="Message AKOMEAH AI..."
+      onkeydown="if(event.key==='Enter')App.sendMessage()">
+    <button class="primary-btn send-btn" onclick="App.sendMessage()" aria-label="Send message">➤</button>
+  </div>
+
+</section>
+
+<!-- HISTORY -->
+<section id="history" class="screen">
+  <h2>Conversation History</h2>
+  <div id="historyList" class="card">
+    <p class="muted">Your saved conversations will appear here.</p>
+  </div>
+</section>
+
+<!-- ACCOUNT -->
+<section id="account" class="screen">
+  <h2>Your Account</h2>
+
+  <div class="card">
+    <div class="logo">A</div>
+    <h3 id="profileName">Guest User</h3>
+    <p class="muted">Currently using guest access.</p>
+    <button class="primary-btn" onclick="App.navigate('auth')">Create an account / Sign in</button>
+  </div>
+</section>
+
+<!-- AUTHENTICATION -->
+<section id="auth" class="screen">
+  <h2>Welcome back</h2>
+  <div class="card">
+    <h3>Email registration or login</h3>
+    <input id="authName" placeholder="Your name">
+    <br><br>
+    <input id="authEmail" type="email" placeholder="Email address">
+    <br><br>
+    <input id="authPassword" type="password" placeholder="Password">
+    <br><br>
+    <button class="primary-btn" onclick="App.registerWithEmail()">Create account</button>
+    <br><br>
+    <button class="secondary-btn" onclick="App.loginWithEmail()">Sign in</button>
+    <br><br>
+    <button class="secondary-btn" onclick="App.loginWithGoogle()">Continue with Google</button>
+    <p class="muted">Your account is secured by Firebase Authentication.</p>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="screen">
+  <h2>Settings</h2>
+
+  <div class="card">
+    <h3>Appearance</h3>
+    <div class="setting-row">
+      <span>Dark / Light mode</span>
+      <button class="secondary-btn" onclick="App.toggleTheme()">Change</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>AI Preferences</h3>
+    <div class="setting-row">
+      <span>Response style</span>
+      <strong>Adaptive</strong>
+    </div>
+    <div class="setting-row">
+      <span>Language</span>
+      <strong>English</strong>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Voice and media</h3>
+    <div class="setting-row">
+      <span>Voice input</span>
+      <button class="secondary-btn" onclick="App.showNotice('Voice input will be added in the next development stage.')">Voice</button>
+    </div>
+    <div class="setting-row">
+      <span>Image uploads</span>
+      <button class="secondary-btn" onclick="App.showNotice('Image upload will be connected in the next development stage.')">Images</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Memory Management</h3>
+    <p class="muted">Manage information AKOMEAH AI remembers about you.</p>
+    <div id="memoryList"></div>
+    <button class="secondary-btn" onclick="App.clearMemory()">Clear all memories</button>
+  </div>
+
+  <div class="card">
+    <h3>About AKOMEAH AI</h3>
+    <p>One Platform. Endless Possibilities.</p>
+    <p class="muted">Created by Akomeah</p>
+    <p class="muted">Version 1.0</p>
+  </div>
+
+  <div class="card">
+    <button class="secondary-btn" onclick="App.logout()">Return to guest mode</button>
+  </div>
+</section>
+
+<div id="notice" class="card hidden"></div>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-screen="home" onclick="App.navigate('home')">Home</button>
+  <button class="nav-btn" data-screen="chat" onclick="App.navigate('chat')">Chat</button>
+  <button class="nav-btn" data-screen="history" onclick="App.navigate('history')">History</button>
+  <button class="nav-btn" data-screen="account" onclick="App.navigate('account')">Account</button>
+  <button class="nav-btn" data-screen="settings" onclick="App.navigate('settings')">Settings</button>
+</nav>
+
+<script src="libs/purify.min.js"></script>
+<script src="libs/marked.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
+
