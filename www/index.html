@@ -54,7 +54,15 @@
     </div>
   </div>
 
+  <div id="imageStatus" class="muted" hidden></div>
+  <input id="imageInput" type="file"
+    accept="image/jpeg,image/png,image/webp"
+    hidden onchange="App.handleImageSelection(this)">
+
   <div class="chat-controls">
+    <button class="secondary-btn" onclick="App.startVoiceInput()" aria-label="Voice input">🎙</button>
+    <button class="secondary-btn" onclick="document.getElementById('imageInput').click()" aria-label="Choose image">＋</button>
+    <div id="chatImagePreview" class="image-preview" hidden></div>
     <input id="messageInput" placeholder="Message AKOMEAH AI..."
       onkeydown="if(event.key==='Enter')App.sendMessage()">
     <button class="primary-btn send-btn" onclick="App.sendMessage()" aria-label="Send message">➤</button>
@@ -90,7 +98,8 @@
     <div class="logo">A</div>
     <h3 id="profileName">Guest User</h3>
     <p class="muted" id="accountStatus">Currently using guest access.</p>
-    <button class="primary-btn" onclick="App.navigate('auth')">Create an account / Sign in</button>
+    <button class="primary-btn" id="authButton" onclick="App.navigate('auth')">Create an account / Sign in</button>
+    <button class="secondary-btn" id="logoutButton" onclick="App.logout()" style="display:none;">Sign out</button>
   </div>
 </section>
 
@@ -128,25 +137,61 @@
 
   <div class="card">
     <h3>AI Preferences</h3>
-    <div class="setting-row">
-      <span>Response style</span>
-      <strong>Adaptive</strong>
+
+    <label>Response style</label>
+    <div class="preference-picker">
+      <button type="button" class="preference-trigger"
+        onclick="App.togglePreferenceMenu('style')">
+        <span id="styleValue">Adaptive</span>
+        <span>⌄</span>
+      </button>
+      <div class="preference-options" id="styleOptions" hidden>
+        <button type="button" onclick="App.choosePreference('style','Adaptive')">Adaptive</button>
+        <button type="button" onclick="App.choosePreference('style','Friendly')">Friendly</button>
+        <button type="button" onclick="App.choosePreference('style','Professional')">Professional</button>
+        <button type="button" onclick="App.choosePreference('style','Simple English')">Simple English</button>
+        <button type="button" onclick="App.choosePreference('style','Detailed')">Detailed</button>
+      </div>
     </div>
-    <div class="setting-row">
-      <span>Language</span>
-      <strong>English</strong>
+    <select id="responseStyle" hidden>
+      <option value="Adaptive">Adaptive</option>
+      <option value="Friendly">Friendly</option>
+      <option value="Professional">Professional</option>
+      <option value="Simple English">Simple English</option>
+      <option value="Detailed">Detailed</option>
+    </select>
+
+    <label>Language</label>
+    <div class="preference-picker">
+      <button type="button" class="preference-trigger"
+        onclick="App.togglePreferenceMenu('language')">
+        <span id="languageValue">English</span>
+        <span>⌄</span>
+      </button>
+      <div class="preference-options" id="languageOptions" hidden>
+        <button type="button" onclick="App.choosePreference('language','English')">English</button>
+        <button type="button" onclick="App.choosePreference('language','Twi')">Twi</button>
+        <button type="button" onclick="App.choosePreference('language','French')">French</button>
+        <button type="button" onclick="App.choosePreference('language','Spanish')">Spanish</button>
+      </div>
     </div>
+    <select id="responseLanguage" hidden>
+      <option value="English">English</option>
+      <option value="Twi">Twi</option>
+      <option value="French">French</option>
+      <option value="Spanish">Spanish</option>
+    </select>
   </div>
 
   <div class="card">
     <h3>Voice and media</h3>
     <div class="setting-row">
       <span>Voice input</span>
-      <button class="secondary-btn" onclick="App.showNotice('Voice input will be added in the next development stage.')">Voice</button>
+      <button class="secondary-btn" onclick="App.startVoiceInput()">Voice</button>
     </div>
     <div class="setting-row">
       <span>Image uploads</span>
-      <button class="secondary-btn" onclick="App.showNotice('Image upload will be connected in the next development stage.')">Images</button>
+      <button class="secondary-btn" onclick="document.getElementById('imageInput').click()">Choose image</button>
     </div>
   </div>
 

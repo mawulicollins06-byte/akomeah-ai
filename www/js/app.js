@@ -14,6 +14,7 @@ const App = {
   init() {
     this.loadData();
     this.applyTheme();
+    this.loadSettings();
     this.updateProfile();
 
     if (!window.firebaseAuth || !window.firebaseDb) {
@@ -138,7 +139,7 @@ localStorage.setItem(
 
   if (!input) return;
 
-  const message = input.value.trim();
+  const message = input.value.trim() || (this.pendingImage ? "Please describe this image." : "");
 const history = this.messages
   .filter(item => item.role === "user" || item.role === "ai")
   .slice(-20)
@@ -170,8 +171,29 @@ const history = this.messages
       this.saveData();
     }
   }
+  const imageForRequest = this.pendingImage || null;
+  this.pendingImage = null;
+
+  const imagePreview = document.getElementById("chatImagePreview");
+  if (imagePreview) {
+    imagePreview.replaceChildren();
+    imagePreview.hidden = true;
+  }
+
   input.value = "";
   this.saveData();
+
+  if (imageForRequest) {
+    const userMessage = [...this.messages].reverse().find(
+      item => item.role === "user"
+    );
+    if (userMessage) {
+      userMessage.imageData =
+        "data:" + imageForRequest.mimeType + ";base64," +
+        imageForRequest.data;
+    }
+    this.renderMessages();
+  }
 
   this.addMessage("ai", "AKOMEAH AI is thinking...");
   const loadingIndex = this.messages.length - 1;
@@ -187,7 +209,10 @@ const history = this.messages
         body: JSON.stringify({
           message,
           history,
-          memory: this.memory
+          memory: this.memory,
+          responseStyle: (this.settings || {}).responseStyle || "Adaptive",
+          responseLanguage: (this.settings || {}).responseLanguage || "English",
+          image: imageForRequest
         })
       }
     );
@@ -209,6 +234,22 @@ const history = this.messages
   }
 
   this.renderMessages();
+
+  for (const item of this.messages) {
+    if (item.imageData) {
+      const imageKey = "image_" + item.id;
+
+      try {
+        await this.saveChatImage(imageKey, item.imageData);
+        item.imageKey = imageKey;
+        delete item.imageData;
+      } catch (error) {
+        console.error("Image storage failed:", error);
+        this.showNotice("An image could not be saved for chat history.");
+      }
+    }
+  }
+
   this.saveData();
 },
 addMessage(role, content) {
@@ -220,6 +261,59 @@ addMessage(role, content) {
     });
 
     this.renderMessages();
+  },
+
+  openImageDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("AkomeahChatImages", 1);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("images")) {
+          db.createObjectStore("images", { keyPath: "id" });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async saveChatImage(id, data) {
+    const db = await this.openImageDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("images", "readwrite");
+      transaction.objectStore("images").put({ id, data });
+
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  },
+
+  async getChatImage(id) {
+    const db = await this.openImageDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("images", "readonly");
+      const request = transaction.objectStore("images").get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        db.close();
+        resolve(result ? result.data : null);
+      };
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
   },
 
   renderMessages() {
@@ -237,6 +331,25 @@ addMessage(role, content) {
 
       if (message.role === "user") {
         bubble.textContent = message.content;
+
+        if (message.imageData || message.imageKey) {
+          const image = document.createElement("img");
+          image.alt = "Attached image";
+          image.className = "sent-image";
+          bubble.appendChild(image);
+
+          if (message.imageData) {
+            image.src = message.imageData;
+          } else {
+            this.getChatImage(message.imageKey)
+              .then(data => {
+                if (data && image.isConnected) image.src = data;
+              })
+              .catch(error =>
+                console.error("Unable to load saved chat image:", error)
+              );
+          }
+        }
       } else if (window.marked && window.DOMPurify) {
         bubble.innerHTML = window.DOMPurify.sanitize(
           window.marked.parse(message.content || "")
@@ -272,6 +385,144 @@ addMessage(role, content) {
     this.navigate("chat");
   },
 
+
+  loadSettings() {
+    try {
+      this.settings = JSON.parse(localStorage.getItem("akomeah_settings") || "{}");
+    } catch (_) {
+      this.settings = {};
+    }
+    this.settings.responseStyle = this.settings.responseStyle || "Adaptive";
+    this.settings.responseLanguage = this.settings.responseLanguage || "English";
+    this.renderSettings();
+  },
+
+  renderSettings() {
+    const style = document.getElementById("responseStyle");
+    const language = document.getElementById("responseLanguage");
+    if (style) style.value = this.settings.responseStyle;
+    if (language) language.value = this.settings.responseLanguage;
+  },
+
+  togglePreferenceMenu(type) {
+    const menuId = type === "style" ? "styleOptions" : "languageOptions";
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+
+    const wasHidden = menu.hidden;
+
+    ["styleOptions", "languageOptions"].forEach(id => {
+      const item = document.getElementById(id);
+      if (item) item.hidden = true;
+    });
+
+    menu.hidden = !wasHidden;
+  },
+
+  choosePreference(type, value) {
+    const id = type === "style" ? "responseStyle" : "responseLanguage";
+    const labelId = type === "style" ? "styleValue" : "languageValue";
+    const select = document.getElementById(id);
+    const label = document.getElementById(labelId);
+
+    if (!select || !label) return;
+
+    select.value = value;
+    label.textContent = value;
+
+    const menuId = type === "style" ? "styleOptions" : "languageOptions";
+    const menu = document.getElementById(menuId);
+    if (menu) menu.hidden = true;
+
+    this.updateSettings();
+  },
+
+  updateSettings() {
+    this.settings = this.settings || {};
+    const style = document.getElementById("responseStyle");
+    const language = document.getElementById("responseLanguage");
+    if (style) this.settings.responseStyle = style.value;
+    if (language) this.settings.responseLanguage = language.value;
+    localStorage.setItem("akomeah_settings", JSON.stringify(this.settings));
+    this.showNotice("AI preferences saved.");
+  },
+
+  startVoiceInput() {
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!Speech) {
+      this.showNotice("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new Speech();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      this.showNotice("Listening... Speak now.");
+    };
+
+    recognition.onresult = event => {
+      const input = document.getElementById("messageInput");
+      if (input) {
+        input.value = event.results[0][0].transcript;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      this.showNotice("Voice input received.");
+    };
+
+    recognition.onerror = event => {
+      this.showNotice("Voice error: " + event.error);
+      console.error("AKOMEAH AI voice error:", event.error);
+    };
+
+    recognition.onend = () => {
+      console.log("AKOMEAH AI voice recognition ended.");
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      this.showNotice("Voice error: " + error.message);
+      console.error(error);
+    }
+  },
+
+  handleImageSelection(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const status = document.getElementById("imageStatus");
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      this.showNotice("Choose a JPEG, PNG or WebP image under 5 MB.");
+      input.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.pendingImage = {
+        mimeType: file.type,
+        data: String(reader.result).split(",")[1]
+      };
+      if (status) status.textContent = "";
+
+      const preview = document.getElementById("chatImagePreview");
+      if (preview) {
+        const image = document.createElement("img");
+        image.src = String(reader.result);
+        image.alt = "Selected image";
+        image.className = "image-preview-img";
+        preview.replaceChildren(image);
+        preview.hidden = false;
+      }
+    };
+    reader.onerror = () => this.showNotice("Could not read that image.");
+    reader.readAsDataURL(file);
+    input.value = "";
+  },
+
   applyTheme() {
     const theme = localStorage.getItem("akomeah_theme");
 
@@ -290,6 +541,18 @@ addMessage(role, content) {
   updateProfile() {
     const name = document.getElementById("profileName");
     const status = document.getElementById("accountStatus");
+    const authButton = document.getElementById("authButton");
+    const logoutButton = document.getElementById("logoutButton");
+
+    const signedIn = this.user.type === "registered" && !!this.accountId;
+
+    if (authButton) {
+      authButton.style.display = signedIn ? "none" : "block";
+    }
+
+    if (logoutButton) {
+      logoutButton.style.display = signedIn ? "block" : "none";
+    }
 
     if (name) {
       name.textContent = this.user.name || "Guest User";
