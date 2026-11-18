@@ -570,3 +570,251 @@ body {
   color: #b4b4b4;
   text-decoration: underline;
 }
+
+/* AKOMEAH AI - Pure black chat background */
+#chat,
+#chat .chat-area {
+  background: #000000 !important;
+}
+
+#chat .chat-controls {
+  background: #000000 !important;
+  border: 1px solid #333333 !important;
+}
+
+#chat .message.ai {
+  color: #ffffff !important;
+}
+
+/* AKOMEAH AI - Full black theme */
+html,
+body,
+#app,
+.app,
+.app-container,
+.app-layout,
+.main-content,
+main,
+header,
+nav,
+.sidebar,
+#chat,
+#chat .chat-area,
+#chat .chat-controls {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+#chat .message.ai {
+  color: #ffffff !important;
+}
+
+input,
+textarea {
+  background-color: #171717 !important;
+  color: #ffffff !important;
+  border-color: #333333 !important;
+}
+
+/* Full black background for AKOMEAH AI screens */
+html,
+body,
+.app-header,
+.screen,
+#home,
+#chat,
+#history,
+#account,
+#settings,
+.welcome,
+.bottom-nav {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Keep chat input styling unchanged */
+
+/* Start a conversation text */
+.start-conversation,
+.start-conversation h1,
+.start-conversation h2,
+.start-conversation p {
+  color: #ffffff !important;
+}
+
+/* Start a conversation button */
+button.start-conversation,
+.start-conversation-btn,
+#startConversation {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+}
+
+/* White Start a conversation button */
+#home .welcome button.primary-btn {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+}
+
+
+/* Modern AKOMEAH AI conversation history */
+#history {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.history-heading {
+  margin-bottom: 22px;
+}
+
+.history-heading h2 {
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.history-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: #171717 !important;
+  color: #ffffff !important;
+  border: 1px solid #333333 !important;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #303030;
+  border-radius: 14px;
+  background: #111111;
+  color: #ffffff;
+}
+
+.history-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.history-title {
+  display: block;
+  color: #ffffff;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.history-preview {
+  margin: 7px 0;
+  color: #aaaaaa;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.history-date {
+  color: #777777;
+  font-size: 11px;
+}
+
+.history-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.history-open,
+.history-delete {
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-open {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
+}
+
+.history-delete {
+  background: transparent;
+  color: #ff7777;
+  border: 1px solid #555555;
+}
+
+.history-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #999999;
+}
+
+@media (max-width: 380px) {
+  .history-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .history-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+}
+
+/* Compact conversation history */
+.history-heading {
+  margin-bottom: 12px;
+}
+
+.history-search {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+
+.history-list {
+  gap: 7px;
+}
+
+.history-item {
+  padding: 9px 11px;
+  gap: 8px;
+  border-radius: 10px;
+}
+
+.history-title {
+  font-size: 13px;
+}
+
+.history-preview {
+  margin: 3px 0;
+  font-size: 11px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-date {
+  font-size: 10px;
+}
+
+.history-actions {
+  flex-direction: row;
+  gap: 5px;
+}
+
+.history-open,
+.history-delete {
+  padding: 6px 8px;
+  font-size: 11px;
+}

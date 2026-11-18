@@ -15,3 +15,9 @@ android/app/build/
 *.firebase-backup
 *.memory-backup
 *.smart-memory-backup
+
+# Local development logs
+server.log
+
+# Local repair scripts
+firebase-auth-repair.js

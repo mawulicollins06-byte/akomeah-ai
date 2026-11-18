@@ -2,6 +2,7 @@
 
 const App = {
   currentScreen: "home",
+  accountId: null,
   messages: [],
   conversations: [],
   memory: "",
@@ -15,41 +16,69 @@ const App = {
     this.applyTheme();
     this.updateProfile();
 
-    if (window.firebaseAuth) {
-      window.firebaseAuth.onAuthStateChanged(firebaseUser => {
-        if (firebaseUser) {
-          this.user = {
-            name: firebaseUser.displayName || "AKOMEAH AI User",
-            email: firebaseUser.email || "",
-            type: "registered"
-          };
-        } else {
-          this.user = {
-            name: "Guest User",
-            email: "",
-            type: "guest"
-          };
-        }
-
-        this.saveData();
-        this.updateProfile();
-      });
+    if (!window.firebaseAuth || !window.firebaseDb) {
+      console.warn("Firebase is unavailable.");
+      return;
     }
+
+    window.firebaseAuth.onAuthStateChanged(async firebaseUser => {
+      const generation = ++this.syncGeneration;
+      this.cloudReady = false;
+      clearTimeout(this.cloudSaveTimer);
+
+      if (!firebaseUser) {
+        this.accountId = null;
+        this.loadData();
+        this.user = {
+          name: "Guest User",
+          email: "",
+          type: "guest"
+        };
+        this.updateProfile();
+        this.renderMessages();
+        this.renderHistory();
+        this.renderMemory();
+        return;
+      }
+
+      this.accountId = firebaseUser.uid;
+      this.loadData();
+      this.user = {
+        name: firebaseUser.displayName || "AKOMEAH AI User",
+        email: firebaseUser.email || "",
+        type: "registered"
+      };
+      this.updateProfile();
+
+      try {
+        await this.loadCloudData(firebaseUser.uid, generation);
+      } catch (error) {
+        this.cloudReady = false;
+        console.error("Firestore load failed:", error);
+        this.showNotice("Signed in, but cloud data could not load.");
+      }
+    });
+  },
+
+  storageKey(name) {
+    return this.accountId
+      ? `akomeah_user_${this.accountId}_${name}`
+      : `akomeah_${name}`;
   },
 
   loadData() {
     try {
       this.messages = JSON.parse(
-        localStorage.getItem("akomeah_messages") || "[]"
+        localStorage.getItem(this.storageKey("messages")) || "[]"
       );
       this.conversations = JSON.parse(
-        localStorage.getItem("akomeah_conversations") || "[]"
+        localStorage.getItem(this.storageKey("conversations")) || "[]"
       );
       this.user = JSON.parse(
-        localStorage.getItem("akomeah_user") ||
+        localStorage.getItem(this.storageKey("user")) ||
         JSON.stringify(this.user)
       );
-      this.memory = localStorage.getItem("akomeah_memory") || "";
+      this.memory = localStorage.getItem(this.storageKey("memory")) || "";
     } catch (error) {
       console.error("Unable to load saved data", error);
     }
@@ -57,21 +86,21 @@ const App = {
 
   saveData() {
     localStorage.setItem(
-      "akomeah_messages",
+      this.storageKey("messages"),
       JSON.stringify(this.messages)
     );
 
     localStorage.setItem(
-      "akomeah_conversations",
+      this.storageKey("conversations"),
       JSON.stringify(this.conversations)
     );
 
 localStorage.setItem(
-  "akomeah_memory",
+  this.storageKey("memory"),
   this.memory
 );
     localStorage.setItem(
-      "akomeah_user",
+      this.storageKey("user"),
       JSON.stringify(this.user)
     );
   },
@@ -149,7 +178,7 @@ const history = this.messages
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:3000/api/chat",
+      "/api/chat",
       {
         method: "POST",
         headers: {
@@ -181,7 +210,7 @@ const history = this.messages
 
   this.renderMessages();
   this.saveData();
-},  
+},
 addMessage(role, content) {
     this.messages.push({
       id: Date.now(),
@@ -260,9 +289,20 @@ addMessage(role, content) {
 
   updateProfile() {
     const name = document.getElementById("profileName");
+    const status = document.getElementById("accountStatus");
 
     if (name) {
-      name.textContent = this.user.name;
+      name.textContent = this.user.name || "Guest User";
+    }
+
+    if (status) {
+      if (this.user.type === "registered" && this.accountId) {
+        status.textContent = this.user.email
+          ? "Signed in as " + this.user.email
+          : "Signed in to your AKOMEAH AI account.";
+      } else {
+        status.textContent = "Currently using guest access.";
+      }
     }
   },
 
@@ -289,7 +329,6 @@ addMessage(role, content) {
         type: "registered"
       };
 
-      this.saveData();
       this.updateProfile();
       this.navigate("home");
       this.showNotice("Your AKOMEAH AI account was created successfully.");
@@ -309,7 +348,6 @@ addMessage(role, content) {
         type: "registered"
       };
 
-      this.saveData();
       this.updateProfile();
       this.navigate("home");
       this.showNotice("Signed in with Google successfully.");
@@ -335,7 +373,6 @@ addMessage(role, content) {
         type: "registered"
       };
 
-      this.saveData();
       this.updateProfile();
       this.navigate("home");
       this.showNotice("Welcome back to AKOMEAH AI.");
@@ -362,43 +399,79 @@ addMessage(role, content) {
 
     list.replaceChildren();
 
-    if (!this.conversations.length) {
+    const searchInput = document.getElementById("historySearch");
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+    const filtered = this.conversations
+      .map((conversation, index) => ({ conversation, index }))
+      .filter(({ conversation }) => {
+        const firstMessage = (conversation.messages || [])
+          .find(message => message.role === "user");
+
+        const title = conversation.title ||
+          (firstMessage ? firstMessage.content : "New conversation");
+
+        return title.toLowerCase().includes(query) ||
+          (firstMessage && firstMessage.content.toLowerCase().includes(query));
+      });
+
+    if (!filtered.length) {
       const empty = document.createElement("p");
-      empty.className = "muted";
-      empty.textContent = "No saved conversations yet.";
+      empty.className = "history-empty";
+      empty.textContent = query
+        ? "No conversations match your search."
+        : "No saved conversations yet. Start a chat to see it here.";
       list.appendChild(empty);
       return;
     }
 
-    this.conversations.forEach((conversation, index) => {
+    filtered.forEach(({ conversation, index }) => {
       const card = document.createElement("div");
-      card.className = "setting-row";
+      card.className = "history-item";
 
       const details = document.createElement("div");
+      details.className = "history-details";
+
       const title = document.createElement("strong");
       const firstUserMessage = (conversation.messages || [])
         .find(message => message.role === "user");
 
+      title.className = "history-title";
       title.textContent = conversation.title ||
-        (firstUserMessage ? firstUserMessage.content.slice(0, 35) : "Conversation " + (index + 1));
+        (firstUserMessage
+          ? firstUserMessage.content.slice(0, 40)
+          : "New conversation");
 
-      const date = document.createElement("p");
-      date.className = "muted";
-      date.textContent = new Date(conversation.date).toLocaleString();
+      const preview = document.createElement("p");
+      preview.className = "history-preview";
+      preview.textContent = firstUserMessage
+        ? firstUserMessage.content.slice(0, 90)
+        : "No messages";
 
-      details.append(title, date);
+      const date = document.createElement("span");
+      date.className = "history-date";
+      const parsedDate = new Date(conversation.date);
+      date.textContent = Number.isNaN(parsedDate.getTime())
+        ? ""
+        : parsedDate.toLocaleDateString();
+
+      details.append(title, preview, date);
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
 
       const open = document.createElement("button");
-      open.className = "secondary-btn";
+      open.className = "history-open";
       open.textContent = "Open";
       open.onclick = () => this.openConversation(index);
 
       const remove = document.createElement("button");
-      remove.className = "secondary-btn";
+      remove.className = "history-delete";
       remove.textContent = "Delete";
       remove.onclick = () => this.deleteConversation(index);
 
-      card.append(details, open, remove);
+      actions.append(open, remove);
+      card.append(details, actions);
       list.appendChild(card);
     });
   },
@@ -427,7 +500,7 @@ addMessage(role, content) {
 
     list.replaceChildren();
 
-    const entries = this.memory.split("\\n").filter(item => item.trim());
+    const entries = this.memory.split("\n").filter(item => item.trim());
 
     if (!entries.length) {
       const empty = document.createElement("p");
@@ -454,9 +527,9 @@ addMessage(role, content) {
   },
 
   deleteMemory(index) {
-    const entries = this.memory.split("\\n").filter(item => item.trim());
+    const entries = this.memory.split("\n").filter(item => item.trim());
     entries.splice(index, 1);
-    this.memory = entries.join("\\n");
+    this.memory = entries.join("\n");
     this.saveData();
     this.renderMemory();
   },
@@ -491,7 +564,128 @@ addMessage(role, content) {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  App.init();
+
+/* AKOMEAH_FIRESTORE_CLOUD_SYNC_V2 */
+(function () {
+  const app = App;
+  const localSave = app.saveData.bind(app);
+
+  app.cloudReady = false;
+  app.cloudSaveTimer = null;
+  app.syncGeneration = 0;
+
+  function userRef(uid) {
+    return window.firebaseDb.collection("users").doc(uid);
+  }
+
+  app.saveData = function () {
+    localSave();
+    if (this.cloudReady && this.accountId) this.queueCloudSave();
+  };
+
+  app.queueCloudSave = function () {
+    if (!this.cloudReady || !this.accountId) return;
+    clearTimeout(this.cloudSaveTimer);
+    this.cloudSaveTimer = setTimeout(() => {
+      this.saveCloudData().catch(error =>
+        console.error("Firestore save failed:", error)
+      );
+    }, 1000);
+  };
+
+  app.loadCloudData = async function (uid, generation) {
+    const root = userRef(uid);
+    const results = await Promise.all([
+      root.collection("appData").doc("profile").get(),
+      root.collection("appData").doc("activeChat").get(),
+      root.collection("conversations").get()
+    ]);
+
+    if (generation !== this.syncGeneration || this.accountId !== uid) return;
+
+    const [profile, active, chats] = results;
+    const hasData = profile.exists || active.exists || !chats.empty;
+
+    if (hasData) {
+      if (profile.exists && profile.data().user) {
+        this.user = profile.data().user;
+      }
+
+      this.messages = active.exists && Array.isArray(active.data().messages)
+        ? active.data().messages : [];
+
+      this.memory = active.exists && typeof active.data().memory === "string"
+        ? active.data().memory : "";
+
+      this.conversations = [];
+      chats.forEach(doc => {
+        this.conversations.push({ ...doc.data(), id: doc.id });
+      });
+
+      localSave();
+    }
+
+    if (generation !== this.syncGeneration || this.accountId !== uid) return;
+
+    this.cloudReady = true;
+    this.updateProfile();
+    this.renderMessages();
+    this.renderHistory();
+    this.renderMemory();
+
+    if (!hasData) this.queueCloudSave();
+
+    console.log("AKOMEAH AI: Firestore ready.");
+  };
+
+  app.saveCloudData = async function () {
+    const uid = this.accountId;
+    if (!uid || !this.cloudReady) return;
+
+    const root = userRef(uid);
+    const chatsRef = root.collection("conversations");
+
+    await root.collection("appData").doc("profile").set({
+      user: this.user,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    await root.collection("appData").doc("activeChat").set({
+      messages: this.messages || [],
+      memory: this.memory || "",
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    const conversations = this.conversations || [];
+    const operations = [];
+
+    conversations.forEach(chat => {
+      if (!chat.id) {
+        chat.id = "chat_" + Date.now().toString(36) +
+          "_" + Math.random().toString(36).slice(2, 9);
+      }
+      operations.push({
+        ref: chatsRef.doc(chat.id),
+        data: {
+          ...chat,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }
+      });
+    });
+
+    for (let i = 0; i < operations.length; i += 400) {
+      const batch = window.firebaseDb.batch();
+      operations.slice(i, i + 400).forEach(op => {
+        batch.set(op.ref, op.data, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    console.log("AKOMEAH AI: cloud data saved.");
+  };
+})();
+
+App.init();
 });
 
 window.App = App;
