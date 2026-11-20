@@ -602,8 +602,19 @@ addMessage(role, content) {
 
   async loginWithGoogle() {
     try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const result = await window.firebaseAuth.signInWithPopup(provider);
+      if (!window.FirebaseAuthentication) {
+        throw new Error("Native Google authentication is unavailable.");
+      }
+
+      const nativeResult = await window.FirebaseAuthentication.signInWithGoogle();
+      const idToken = nativeResult?.credential?.idToken;
+
+      if (!idToken) {
+        throw new Error("Google did not return an ID token.");
+      }
+
+      const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+      const result = await window.firebaseAuth.signInWithCredential(credential);
 
       this.user = {
         name: result.user.displayName || "AKOMEAH AI User",
