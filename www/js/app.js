@@ -200,7 +200,7 @@ const history = this.messages
 
   try {
     const response = await fetch(
-      "/api/chat",
+      "https://akomeah-ai.onrender.com/api/chat",
       {
         method: "POST",
         headers: {
