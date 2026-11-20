@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "306051082203",
+    "project_id": "akomeah-ai",
+    "storage_bucket": "akomeah-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306051082203:android:f12fb74d262a5d065fa9fe",
+        "android_client_info": {
+          "package_name": "com.akomeah.ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "306051082203-rvvk3kl0s49sn7s4gslfcri77nn6957k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0YQxRzt_T50iv5ZenyR0ANfOgqnTOY8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "306051082203-rvvk3kl0s49sn7s4gslfcri77nn6957k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
