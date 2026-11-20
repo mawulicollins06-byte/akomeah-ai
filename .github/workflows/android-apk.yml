@@ -40,6 +40,14 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Configure shared debug keystore
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
+        run: |
+          mkdir -p ~/.android
+          printf '%s' "$ANDROID_DEBUG_KEYSTORE" | base64 --decode > ~/.android/debug.keystore
+          chmod 600 ~/.android/debug.keystore
+
       - name: Build debug APK
         run: |
           cd android
