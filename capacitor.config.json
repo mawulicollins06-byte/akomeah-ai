@@ -1,5 +1,12 @@
 {
   "appId": "com.akomeah.ai",
   "appName": "AKOMEAH AI",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "providers": [
+        "google.com"
+      ]
+    }
+  }
 }
