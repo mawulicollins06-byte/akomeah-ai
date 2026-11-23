@@ -212,6 +212,7 @@ const history = this.messages
           memory: this.memory,
           responseStyle: (this.settings || {}).responseStyle || "Adaptive",
           responseLanguage: (this.settings || {}).responseLanguage || "English",
+          thinkingMode: (this.settings || {}).thinkingMode || "AUTO",
           image: imageForRequest
         })
       }
@@ -394,24 +395,34 @@ addMessage(role, content) {
     }
     this.settings.responseStyle = this.settings.responseStyle || "Adaptive";
     this.settings.responseLanguage = this.settings.responseLanguage || "English";
+    this.settings.thinkingMode = ["AUTO", "FAST", "DEEP", "MAXIMUM"].includes(this.settings.thinkingMode)
+      ? this.settings.thinkingMode : "AUTO";
     this.renderSettings();
   },
 
   renderSettings() {
     const style = document.getElementById("responseStyle");
     const language = document.getElementById("responseLanguage");
+    const thinking = document.getElementById("thinkingMode");
     if (style) style.value = this.settings.responseStyle;
     if (language) language.value = this.settings.responseLanguage;
+    if (thinking) thinking.value = this.settings.thinkingMode;
+    const thinkingLabel = document.getElementById("thinkingValue");
+    if (thinkingLabel) thinkingLabel.textContent = this.settings.thinkingMode;
   },
 
   togglePreferenceMenu(type) {
-    const menuId = type === "style" ? "styleOptions" : "languageOptions";
+    const menuId = {
+      style: "styleOptions",
+      language: "languageOptions",
+      thinking: "thinkingOptions"
+    }[type];
     const menu = document.getElementById(menuId);
     if (!menu) return;
 
     const wasHidden = menu.hidden;
 
-    ["styleOptions", "languageOptions"].forEach(id => {
+    ["styleOptions", "languageOptions", "thinkingOptions"].forEach(id => {
       const item = document.getElementById(id);
       if (item) item.hidden = true;
     });
@@ -420,8 +431,14 @@ addMessage(role, content) {
   },
 
   choosePreference(type, value) {
-    const id = type === "style" ? "responseStyle" : "responseLanguage";
-    const labelId = type === "style" ? "styleValue" : "languageValue";
+    const settingsMap = {
+      style: ["responseStyle", "styleValue", "styleOptions"],
+      language: ["responseLanguage", "languageValue", "languageOptions"],
+      thinking: ["thinkingMode", "thinkingValue", "thinkingOptions"]
+    };
+    const setting = settingsMap[type];
+    if (!setting) return;
+    const [id, labelId, menuId] = setting;
     const select = document.getElementById(id);
     const label = document.getElementById(labelId);
 
@@ -430,7 +447,6 @@ addMessage(role, content) {
     select.value = value;
     label.textContent = value;
 
-    const menuId = type === "style" ? "styleOptions" : "languageOptions";
     const menu = document.getElementById(menuId);
     if (menu) menu.hidden = true;
 
@@ -441,8 +457,10 @@ addMessage(role, content) {
     this.settings = this.settings || {};
     const style = document.getElementById("responseStyle");
     const language = document.getElementById("responseLanguage");
+    const thinking = document.getElementById("thinkingMode");
     if (style) this.settings.responseStyle = style.value;
     if (language) this.settings.responseLanguage = language.value;
+    if (thinking) this.settings.thinkingMode = thinking.value;
     localStorage.setItem("akomeah_settings", JSON.stringify(this.settings));
     this.showNotice("AI preferences saved.");
   },

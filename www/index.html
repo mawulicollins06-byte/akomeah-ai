@@ -160,6 +160,27 @@
       <option value="Detailed">Detailed</option>
     </select>
 
+    <label>Thinking mode</label>
+    <div class="preference-picker">
+      <button type="button" class="preference-trigger"
+        onclick="App.togglePreferenceMenu('thinking')">
+        <span id="thinkingValue">AUTO</span>
+        <span>⌄</span>
+      </button>
+      <div class="preference-options" id="thinkingOptions" hidden>
+        <button type="button" onclick="App.choosePreference('thinking','AUTO')">AUTO</button>
+        <button type="button" onclick="App.choosePreference('thinking','FAST')">FAST</button>
+        <button type="button" onclick="App.choosePreference('thinking','DEEP')">DEEP</button>
+        <button type="button" onclick="App.choosePreference('thinking','MAXIMUM')">MAXIMUM</button>
+      </div>
+    </div>
+    <select id="thinkingMode" hidden>
+      <option value="AUTO">AUTO</option>
+      <option value="FAST">FAST</option>
+      <option value="DEEP">DEEP</option>
+      <option value="MAXIMUM">MAXIMUM</option>
+    </select>
+
     <label>Language</label>
     <div class="preference-picker">
       <button type="button" class="preference-trigger"
