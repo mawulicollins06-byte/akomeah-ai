@@ -640,8 +640,19 @@ addMessage(role, content) {
       return;
     }
 
+    clearTimeout(this.noticeTimer);
+
     notice.textContent = message;
     notice.classList.remove("hidden");
+
+    const duration = /error|failed|could not|denied|unavailable|please/i.test(message)
+      ? 6000
+      : 3500;
+
+    this.noticeTimer = setTimeout(() => {
+      notice.classList.add("hidden");
+      notice.textContent = "";
+    }, duration);
   },
 
   renderHistory() {
