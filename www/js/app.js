@@ -447,46 +447,53 @@ addMessage(role, content) {
     this.showNotice("AI preferences saved.");
   },
 
-  startVoiceInput() {
-    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  async startVoiceInput() {
+    const Speech = window.AkomeahSpeech;
 
     if (!Speech) {
-      this.showNotice("Speech recognition is not supported in this browser.");
+      this.showNotice("Speech recognition plugin is not loaded.");
+      console.error("AKOMEAH AI: Native speech plugin unavailable.");
       return;
     }
 
-    const recognition = new Speech();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      this.showNotice("Listening... Speak now.");
-    };
-
-    recognition.onresult = event => {
-      const input = document.getElementById("messageInput");
-      if (input) {
-        input.value = event.results[0][0].transcript;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-      this.showNotice("Voice input received.");
-    };
-
-    recognition.onerror = event => {
-      this.showNotice("Voice error: " + event.error);
-      console.error("AKOMEAH AI voice error:", event.error);
-    };
-
-    recognition.onend = () => {
-      console.log("AKOMEAH AI voice recognition ended.");
-    };
-
     try {
-      recognition.start();
+      const permission = await Speech.checkPermissions();
+
+      if (permission.speechRecognition !== "granted") {
+        const requested = await Speech.requestPermissions();
+
+        if (requested.speechRecognition !== "granted") {
+          this.showNotice("Please allow speech recognition permission.");
+          return;
+        }
+      }
+
+      this.showNotice("Listening... Speak now.");
+
+      const result = await Speech.start({
+        language: "en-US",
+        maxResults: 1,
+        partialResults: false,
+        popup: false
+      });
+
+      const transcript = result.matches && result.matches[0];
+
+      if (transcript) {
+        const input = document.getElementById("messageInput");
+
+        if (input) {
+          input.value = transcript;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        this.showNotice("Voice input received.");
+      } else {
+        this.showNotice("No speech was recognized. Please try again.");
+      }
     } catch (error) {
-      this.showNotice("Voice error: " + error.message);
-      console.error(error);
+      console.error("AKOMEAH AI native voice error:", error);
+      this.showNotice("Voice error: " + (error.message || error));
     }
   },
 
