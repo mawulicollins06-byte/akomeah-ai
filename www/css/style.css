@@ -820,3 +820,26 @@ p {
   margin-top: 8px;
   border-radius: 12px;
 }
+
+/* PREVENT SELECTION OF STATIC APP INTERFACE */
+body,
+body * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* KEEP CHAT MESSAGES SELECTABLE AND COPYABLE */
+#chatMessages .message,
+#chatMessages .message * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* KEEP INPUTS EDITABLE */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
